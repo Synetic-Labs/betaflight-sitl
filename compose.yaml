@@ -1,0 +1,34 @@
+services:
+  sitl:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: .devcontainer/containerfile.sitl
+    image: betaflight-sitl
+    container_name: betaflight-sitl
+    networks:
+      - sim
+    ports:
+      - "5761:5761/tcp"
+      - "9001-9004:9001-9004/udp"
+    volumes:
+      - sitl-config:/home/sitl    # persist eeprom.bin
+
+  websockify:
+    platform: linux/amd64
+    image: jwnmulder/websockify:latest
+    container_name: betaflight-websockify
+    command: ["6761", "sitl:5761"]
+    depends_on:
+      - sitl
+    networks:
+      - sim
+    ports:
+      - "6761:6761/tcp"           # ws bridge for app.betaflight.com
+
+networks:
+  sim:
+    driver: bridge
+
+volumes:
+  sitl-config:

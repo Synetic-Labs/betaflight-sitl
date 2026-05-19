@@ -1,0 +1,9 @@
+.git
+obj
+downloads
+tools
+images
+*.o
+*.elf
+*.hex
+*.map

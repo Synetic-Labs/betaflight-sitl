@@ -1,0 +1,25 @@
+FROM docker.io/library/debian:13-slim AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential make python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+COPY . .
+
+RUN sed -i 's|.*No toolchain URL defined for.*|  ARM_SDK_URL := sitl-builder-unused|' mk/tools.mk
+
+RUN make -j"$(nproc)" TARGET=SITL
+
+# ---- runtime stage ---------------------------------------------------------
+FROM docker.io/library/debian:13-slim AS runtime
+
+RUN useradd --create-home --uid 1000 sitl
+COPY --from=builder /src/obj/main/betaflight_SITL.elf /usr/local/bin/betaflight_sitl
+
+USER sitl
+WORKDIR /home/sitl
+EXPOSE 5760-5768/tcp 9001-9004/udp
+ENTRYPOINT ["betaflight_sitl"]
